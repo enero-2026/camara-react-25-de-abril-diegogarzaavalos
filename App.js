@@ -1,11 +1,59 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { useState, useRef } from "react";
+import {
+  Button,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Pressable,
+} from "react-native";
+import { CameraView, useCameraPermissions } from "expo-camera";
 
 export default function App() {
+  const [facing, setFacing] = useState("back");
+  const [permission, requestPermission] = useCameraPermissions();
+  const ref = useRef(null);
+  const [uri, setUri] = useState(null);
+
+  // Mientras los permisos no se han resuelto, no mostramos nada
+  if (!permission) {
+    return <View />;
+  }
+
+  // Si el permiso fue denegado, mostramos un botón para solicitarlo
+  if (!permission.granted) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.message}>
+          Necesitamos tu permiso para acceder a la cámara
+        </Text>
+        <Button onPress={requestPermission} title="Conceder permiso" />
+      </View>
+    );
+  }
+
+  // Alterna entre cámara frontal y trasera
+  function toggleCameraFacing() {
+    setFacing((current) => (current === "back" ? "front" : "back"));
+  }
+
+  async function tomarFoto() {
+    const photo = await ref.current?.takePictureAsync();
+    if (photo?.uri) setUri(photo.uri);
+  }
+
   return (
     <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
+      <CameraView style={styles.camera} facing={facing} ref={ref}>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
+            <Text style={styles.text}>Voltear cámara</Text>
+          </TouchableOpacity>
+          <Pressable style={styles.button} onPress={tomarFoto}>
+            <Text style={styles.text}>Tomar foto</Text>
+          </Pressable>
+        </View>
+      </CameraView>
     </View>
   );
 }
@@ -13,8 +61,29 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: "center",
+  },
+  message: {
+    textAlign: "center",
+    paddingBottom: 10,
+  },
+  camera: {
+    flex: 1,
+  },
+  buttonContainer: {
+    flex: 1,
+    flexDirection: "row",
+    backgroundColor: "transparent",
+    margin: 64,
+  },
+  button: {
+    flex: 1,
+    alignSelf: "flex-end",
+    alignItems: "center",
+  },
+  text: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "white",
   },
 });
